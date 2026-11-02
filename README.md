@@ -5,7 +5,7 @@
 ## 特性
 
 - **双平台**：mock（本地 HTTP 控制面，便于联调）与 OneBot v11 反向 WebSocket（QQ）。
-- **对话策略**：私聊直接回复；群聊通过 @ 或触发词“小夏”唤醒；默认启用低频随机插话。
+- **对话策略**：私聊直接回复；群聊通过 @ 或触发词“小霞”唤醒；默认启用低频随机插话。
 - **持久化**：SQLite 保存历史、长期记忆与向量索引，重启不丢。
 - **模型可替换**：走 OpenAI 兼容协议，换真实模型只改配置或环境变量。
 
@@ -51,9 +51,11 @@ programs.direnv.nix-direnv.enable = true;
 
 ## 本地运行
 
-需要两个终端。
+默认 `configs/config.yaml` 的聊天模型指向 arisu 使用的局域网服务
+`http://192.168.200.101:8001/v1`；该服务不支持 embeddings，因此仍需本地 stub
+提供 embedding。需要两个终端：
 
-终端 1，启动本地模型 stub：
+终端 1，启动本地 stub（提供 embedding）：
 
 ```bash
 go run ./cmd/llmstub
@@ -65,12 +67,22 @@ go run ./cmd/llmstub
 go run ./cmd/xia -config configs/config.yaml
 ```
 
+如果不想访问局域网模型，可把聊天也切回 stub：
+
+```bash
+KEI_PLUGINS_CHAT_AGENT_LLM_BASE_URL=http://127.0.0.1:18100/v1 \
+KEI_PLUGINS_CHAT_AGENT_LLM_MODEL=stub-chat \
+go run ./cmd/xia -config configs/config.yaml
+```
+
+下面的 `stub:` 固定输出以“完全本地”模式为准；默认真实模型会返回自然语言。
+
 启动后可用的本地端口：
 
 | 地址 | 用途 |
 |---|---|
 | `127.0.0.1:18080` | mock 控制面：`POST /inject`、`GET /sent`、`GET /healthz` |
-| `127.0.0.1:18082` | OneBot v11 反向 WebSocket：`/onebot/ws` |
+| `127.0.0.1:18082` | OneBot v11 反向 WebSocket：`/onebot/v11/ws` |
 | `127.0.0.1:18100` | llmstub：`/v1/chat/completions`、`/v1/embeddings` |
 | `127.0.0.1:19090` | Prometheus metrics：`/metrics` |
 
@@ -89,7 +101,7 @@ curl -sS http://127.0.0.1:18080/sent \
   | jq -r '.[] | .Request.Message.Segments[] | select(.Type == "text") | .Data.text'
 ```
 
-预期输出：
+默认模型会返回自然语言；完全本地模式下预期输出：
 
 ```
 stub: 你好，介绍一下你自己
@@ -100,10 +112,10 @@ stub: 你好，介绍一下你自己
 ```bash
 curl -sS -X POST http://127.0.0.1:18080/inject \
   -H 'Content-Type: application/json' \
-  -d '{"text":"小夏你好","user_id":"u2","user_name":"Tester2","channel_id":"g1","kind":"group"}'
+  -d '{"text":"小霞你好","user_id":"u2","user_name":"Tester2","channel_id":"g1","kind":"group"}'
 ```
 
-群聊必须 @ 机器人或包含触发词“小夏”；上例会回复 `stub: 小夏你好`。
+群聊必须 @ 机器人或包含触发词“小霞”；完全本地模式下上例会回复 `stub: 小霞你好`。
 
 按 `Ctrl-C` 停止机器人；SQLite 数据保留在 `data/xia.db`。
 
@@ -123,9 +135,12 @@ KEI_STORAGE_DSN=/tmp/xia.db
 KEI_PLUGINS_CHAT_AGENT_RANDOM_ENABLED=false
 ```
 
-## 接入真实模型
+## 模型配置
 
-stub 只返回固定格式文本和确定性向量，不具备真实语言能力。换成任意 OpenAI 兼容服务：
+默认聊天模型是 arisu 使用的局域网服务 `http://192.168.200.101:8001/v1`，配置里的
+`deepseek-v4-flash-dspark` 当前会被服务端映射为 `qwen3.8-flash-next`。该服务
+`/v1/embeddings` 返回 501，所以 `embedding_*` 仍指向本地 stub；只聊天时保持
+`cmd/llmstub` 运行即可。换成其他 OpenAI 兼容服务：
 
 ```bash
 export KEI_PLUGINS_CHAT_AGENT_LLM_BASE_URL=https://api.example.com/v1
@@ -138,14 +153,14 @@ export KEI_PLUGINS_CHAT_AGENT_EMBEDDING_DIMENSIONS=1536
 export KEI_PLUGINS_CHAT_AGENT_EMBEDDING_API_KEY=sk-...
 ```
 
-`embedding_dimensions` 必须与真实 embedding 模型一致（stub 配的是 8）。修改维度后建议删除 `data/xia.db` 重建向量索引。也可以直接改 `configs/config.yaml` 中对应的 `llm_*` / `embedding_*` 键。
+`embedding_dimensions` 必须与真实 embedding 模型一致（stub 配的是 8）。修改维度后建议删除 `data/xia.db` 重建向量索引。也可以直接改 `configs/config.yaml` 中对应的 `llm_*` / `embedding_*` 键。如果暂时没有可用的 embedding 服务，可以关闭 `memory_enabled` / `rag_enabled`，避免检索时反复报错。
 
 ## 接入 QQ
 
 配置里已声明 OneBot v11 反向 WebSocket 实例 `qq-main`。让 OneBot 实现（如 NapCat、Lagrange 等）连接到：
 
 ```
-ws://127.0.0.1:18082/onebot/ws
+ws://127.0.0.1:18082/onebot/v11/ws
 ```
 
 部署时注入账号信息，不要把密钥写进仓库：
