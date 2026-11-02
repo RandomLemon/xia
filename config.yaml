@@ -3,8 +3,8 @@
 #   chat      http://192.168.200.101:8001/v1  qwen3.8-flash-next
 #   embedding http://192.168.200.101:8010/v1  qwen3-vl-embedding-2b-q4km（2048 维）
 # 直接运行：
-#   go run ./cmd/xia -config configs/config.yaml
-# 完全本地运行：启动 ./cmd/llmstub，并用环境变量覆盖 llm_* 与 embedding_*（见 README）。
+#   go run . -config config.yaml
+# 完全本地运行：go run llmstub.go，并用环境变量覆盖 llm_* 与 embedding_*（见 README）。
 # 更换真实模型：设置 KEI_PLUGINS_CHAT_AGENT_LLM_API_KEY /
 # KEI_PLUGINS_CHAT_AGENT_EMBEDDING_API_KEY，并覆盖对应的 base_url / model。
 # QQ 部署：设置 KEI_BOTS_QQ_MAIN_SECRET、KEI_BOTS_QQ_MAIN_SELF_ID，

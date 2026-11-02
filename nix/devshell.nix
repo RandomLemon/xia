@@ -20,7 +20,7 @@ pkgs.mkShell {
 
   shellHook = ''
     echo "xia dev shell · $(go version)"
-    echo "llmstub: go run ./cmd/llmstub"
-    echo "chatbot: go run ./cmd/xia -config configs/config.yaml"
+    echo "llmstub: go run llmstub.go"
+    echo "chatbot: go run . -config config.yaml"
   '';
 }

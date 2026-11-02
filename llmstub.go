@@ -1,3 +1,9 @@
+//go:build ignore
+
+// llmstub 是开发用的 OpenAI 兼容桩服务，与宿主 main.go 一样放在模块根目录。
+//
+// 两者都是 main 包，用 ignore 构建约束保证 `go build .` / `go vet ./...` 只编译宿主；
+// 需要 stub 时显式运行：go run llmstub.go
 package main
 
 import (
