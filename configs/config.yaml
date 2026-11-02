@@ -1,0 +1,133 @@
+# xia chatbot 配置。
+# 本地运行：
+#   1) go run ./cmd/llmstub
+#   2) go run ./cmd/xia -config configs/config.yaml
+# 真实模型：设置 KEI_PLUGINS_CHAT_AGENT_LLM_API_KEY / KEI_PLUGINS_CHAT_AGENT_EMBEDDING_API_KEY
+# 并覆盖 llm_base_url / llm_model / embedding_base_url / embedding_model。
+# QQ 部署：设置 KEI_BOTS_QQ_MAIN_SECRET、KEI_BOTS_QQ_MAIN_SELF_ID，
+# 以及 KEI_PLUGINS_CHAT_AGENT_SELF_IDS=onebot:<机器人QQ号>。
+log:
+  level: info
+  format: text
+
+metrics:
+  addr: 127.0.0.1:19090
+
+storage:
+  type: sqlite
+  dsn: ./data/xia.db
+  cleanup_interval: 1m
+
+auth:
+  admin_users: []
+
+bots:
+  # 本地联调：POST /inject 注入事件，GET /sent 查看发送记录。
+  - name: mock-main
+    adapter: mock
+    platform: mock
+    listen_addr: 127.0.0.1:18080
+
+  # OneBot v11 反向 WebSocket：由 OneBot 实现主动连接到本进程。
+  - name: qq-main
+    adapter: onebot
+    mode: reverse_ws
+    listen_addr: 127.0.0.1:18082
+    ws_path: /onebot/ws
+    ping_interval: 30s
+    secret: ""
+    self_id: ""
+
+plugins:
+  chat-agent:
+    enabled: true
+
+    bot_name: "小夏"
+    system_prompt: ""
+    group_policy: open
+    private_policy: open
+    ignore_bots: true
+    respond_to_commands: false
+    self_ids: []
+    trigger_keywords:
+      - "小夏"
+    trigger_min_chars: 2
+    super_admins: []
+
+    mention_reply_probability: 1.0
+    mention_min_interval: 10s
+    random_enabled: true
+    random_probability: 0.12
+    random_cooldown: 90s
+    random_max_per_hour: 6
+    random_min_participants: 2
+    random_activity_window: 5m
+    batch_window: 2500ms
+    batch_max_window: 8s
+    limits_max_concurrent: 2
+    reply_max_chars: 200
+    reply_mention_sender: false
+    reply_quote: true
+    reply_dedupe: true
+
+    history_max_messages: 30
+    history_max_chars: 8000
+    history_max_sessions: 512
+    history_ttl: 24h
+    history_unconsolidated_ttl: 72h
+    history_cleanup_interval: 5m
+    context_max_messages: 20
+    context_max_chars: 4000
+
+    llm_base_url: "http://127.0.0.1:18100/v1"
+    llm_api_key: ""
+    llm_model: "stub-chat"
+    llm_temperature: 0.8
+    llm_max_tokens: 400
+    llm_timeout: 30s
+    llm_max_retries: 1
+    llm_skip_token: "[SKIP]"
+    llm_skip_enabled: true
+    llm_extra_headers: {}
+    debug_prompts: false
+    vision_enabled: false
+
+    memory_enabled: true
+    rag_enabled: true
+    embedding_base_url: "http://127.0.0.1:18100/v1"
+    embedding_api_key: ""
+    embedding_model: "stub-embed"
+    embedding_dimensions: 8
+    embedding_timeout: 20s
+    embedding_max_retries: 1
+    embedding_extra_headers: {}
+    vector_max_records: 10000
+
+    memory_consolidate_interval: 30m
+    memory_consolidate_max_sessions: 16
+    memory_consolidate_max_messages: 50
+    memory_consolidate_timeout: 5m
+    memory_extract_max: 8
+    memory_extract_min_messages: 2
+    memory_dedupe_threshold: 0.92
+    memory_min_score: 0.35
+    memory_top_k: 5
+    memory_context_max_chars: 1200
+    memory_importance_decay_half_life: 720h
+    memory_min_importance: 0.15
+    memory_ttl: 0
+
+    rag_context_max_chars: 2400
+    knowledge_top_k: 3
+    knowledge_min_score: 0.30
+    knowledge_context_max_chars: 1200
+    knowledge_chunk_chars: 800
+    knowledge_chunk_overlap: 100
+    knowledge_max_bytes: 1048576
+    knowledge_allowed_content_types:
+      - "text/plain"
+      - "text/markdown"
+      - "text/html"
+    knowledge_url_allow_private: false
+
+    jobs_run_on_start: false
