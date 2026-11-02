@@ -98,7 +98,7 @@ plugins:
     llm_temperature: 0.8
     llm_max_tokens: 8192
     llm_timeout: 60s
-    llm_max_retries: 1
+    llm_max_retries: 3
     llm_skip_token: "[SKIP]"
     llm_skip_enabled: true
     llm_extra_headers: {}
@@ -111,15 +111,15 @@ plugins:
     embedding_api_key: ""
     embedding_model: "qwen3-vl-embedding-2b-q4km"
     embedding_dimensions: 2048
-    embedding_timeout: 20s
-    embedding_max_retries: 1
+    embedding_timeout: 60s
+    embedding_max_retries: 3
     embedding_extra_headers: {}
-    vector_max_records: 10000
+    vector_max_records: 50000
 
     memory_consolidate_interval: 30m
     memory_consolidate_max_sessions: 16
-    memory_consolidate_max_messages: 50
-    memory_consolidate_timeout: 5m
+    memory_consolidate_max_messages: 64
+    memory_consolidate_timeout: 15m
     memory_extract_max: 8
     memory_extract_min_messages: 2
     memory_dedupe_threshold: 0.92
@@ -130,7 +130,7 @@ plugins:
     memory_min_importance: 0.15
     memory_ttl: 0
 
-    rag_context_max_chars: 2400
+    rag_context_max_chars: 24000
     knowledge_top_k: 3
     knowledge_min_score: 0.30
     knowledge_context_max_chars: 1200
