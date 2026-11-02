@@ -51,31 +51,35 @@ programs.direnv.nix-direnv.enable = true;
 
 ## 本地运行
 
-默认 `configs/config.yaml` 的聊天模型指向 arisu 使用的局域网服务
-`http://192.168.200.101:8001/v1`；该服务不支持 embeddings，因此仍需本地 stub
-提供 embedding。需要两个终端：
+默认 `configs/config.yaml` 使用两个局域网服务：
 
-终端 1，启动本地 stub（提供 embedding）：
+- 聊天：`http://192.168.200.101:8001/v1`，模型 `qwen3.8-flash-next`
+- embedding：`http://192.168.200.101:8010/v1`，模型 `qwen3-vl-embedding-2b-q4km`，2048 维
+
+直接启动机器人，不需要本地 stub：
+
+```bash
+go run ./cmd/xia -config configs/config.yaml
+```
+
+如果不想访问局域网服务，可完全本地运行。终端 1 启动 stub：
 
 ```bash
 go run ./cmd/llmstub
 ```
 
-终端 2，启动机器人：
-
-```bash
-go run ./cmd/xia -config configs/config.yaml
-```
-
-如果不想访问局域网模型，可把聊天也切回 stub：
+终端 2 用环境变量把聊天和 embedding 都切到 stub：
 
 ```bash
 KEI_PLUGINS_CHAT_AGENT_LLM_BASE_URL=http://127.0.0.1:18100/v1 \
 KEI_PLUGINS_CHAT_AGENT_LLM_MODEL=stub-chat \
+KEI_PLUGINS_CHAT_AGENT_EMBEDDING_BASE_URL=http://127.0.0.1:18100/v1 \
+KEI_PLUGINS_CHAT_AGENT_EMBEDDING_MODEL=stub-embed \
+KEI_PLUGINS_CHAT_AGENT_EMBEDDING_DIMENSIONS=8 \
 go run ./cmd/xia -config configs/config.yaml
 ```
 
-下面的 `stub:` 固定输出以“完全本地”模式为准；默认真实模型会返回自然语言。
+下面的 `stub:` 固定输出以“完全本地”模式为准；默认模型会返回自然语言。
 
 启动后可用的本地端口：
 
@@ -137,10 +141,9 @@ KEI_PLUGINS_CHAT_AGENT_RANDOM_ENABLED=false
 
 ## 模型配置
 
-默认聊天模型是 arisu 使用的局域网服务 `http://192.168.200.101:8001/v1`，配置里的
-`deepseek-v4-flash-dspark` 当前会被服务端映射为 `qwen3.8-flash-next`。该服务
-`/v1/embeddings` 返回 501，所以 `embedding_*` 仍指向本地 stub；只聊天时保持
-`cmd/llmstub` 运行即可。换成其他 OpenAI 兼容服务：
+默认聊天模型是 `http://192.168.200.101:8001/v1` 的 `qwen3.8-flash-next`，embedding 是
+`http://192.168.200.101:8010/v1` 的 `qwen3-vl-embedding-2b-q4km`（2048 维）。聊天服务
+本身不提供 embeddings，所以 embedding 单独指向 8010。换成其他 OpenAI 兼容服务：
 
 ```bash
 export KEI_PLUGINS_CHAT_AGENT_LLM_BASE_URL=https://api.example.com/v1
@@ -153,7 +156,7 @@ export KEI_PLUGINS_CHAT_AGENT_EMBEDDING_DIMENSIONS=1536
 export KEI_PLUGINS_CHAT_AGENT_EMBEDDING_API_KEY=sk-...
 ```
 
-`embedding_dimensions` 必须与真实 embedding 模型一致（stub 配的是 8）。修改维度后建议删除 `data/xia.db` 重建向量索引。也可以直接改 `configs/config.yaml` 中对应的 `llm_*` / `embedding_*` 键。如果暂时没有可用的 embedding 服务，可以关闭 `memory_enabled` / `rag_enabled`，避免检索时反复报错。
+`embedding_dimensions` 必须与 embedding 服务返回的维度一致（当前真实服务是 2048，完全本地 stub 是 8）。修改维度后建议删除 `data/xia.db` 重建向量索引。也可以直接改 `configs/config.yaml` 中对应的 `llm_*` / `embedding_*` 键。如果暂时没有可用的 embedding 服务，可以关闭 `memory_enabled` / `rag_enabled`，避免检索时反复报错。
 
 ## 接入 QQ
 
