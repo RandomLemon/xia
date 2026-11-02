@@ -102,7 +102,7 @@ plugins:
     llm_skip_token: "[SKIP]"
     llm_skip_enabled: true
     llm_extra_headers: {}
-    debug_prompts: true
+    debug_prompts: false
     vision_enabled: true
 
     memory_enabled: true
